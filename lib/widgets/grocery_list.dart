@@ -18,6 +18,7 @@ class _GroceryListState extends State<GroceryList> {
   // Before it was final.
   List<GroceryItem> _groceryItems = [];
   var _isLoading = true;
+  String? _error;
 
   @override
   void initState() {
@@ -29,6 +30,13 @@ class _GroceryListState extends State<GroceryList> {
     final url = Uri.https(projectID, 'shopping-list.json');
     final response = await http.get(url);
     // print(response.body);
+    // print(response.statusCode);
+
+    if (response.statusCode >= 400) {
+      setState(() {
+        _error = 'Failed to load data. Please try again later.';
+      });
+    }
 
     // final Map<String, Map<String, dynamic>> listData =
     final Map<String, dynamic> listData = json.decode(response.body);
@@ -126,6 +134,18 @@ class _GroceryListState extends State<GroceryList> {
             trailing: Text(
               _groceryItems[index].quantity.toString(),
             ),
+          ),
+        ),
+      );
+    }
+
+    if (_error != null) {
+      // ignore: unused_local_variable
+      Widget content = Center(
+        child: Text(
+          _error!,
+          style: const TextStyle(
+            fontSize: 25.0,
           ),
         ),
       );
