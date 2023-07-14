@@ -18,57 +18,73 @@ class _GroceryListState extends State<GroceryList> {
   // Before it was final.
   List<GroceryItem> _groceryItems = [];
   var _isLoading = true;
+  // late Future<List<GroceryItem>> _loadedItems;
   String? _error;
 
   @override
   void initState() {
     super.initState();
     _loadItems();
+    // _loadedItems = _loadItems();
   }
 
+  // Before it was returning Future<List<GroceryItem>>.
+  // Future<List<GroceryItem>> _loadItems() async {
   void _loadItems() async {
     final url = Uri.https(projectID, 'shopping-list.json');
-    final response = await http.get(url);
+
+    try {
+      final response = await http.get(url);
+
+      if (response.statusCode >= 400) {
+        setState(() {
+          _error = 'Failed to load data. Please try again later.';
+        });
+        // throw Exception('Failed to fetch grocery items. Please try again later.');
+      }
+
+      // print(response.body);
+      if (response.body == 'null') {
+        setState(() {
+          _isLoading = false;
+        });
+        return;
+        // return [];
+      }
+
+      // final Map<String, Map<String, dynamic>> listData =
+      final Map<String, dynamic> listData = json.decode(response.body);
+      final List<GroceryItem> loadedItems = [];
+      for (final item in listData.entries) {
+        final category = categories.entries
+            .firstWhere(
+                (catItem) => catItem.value.title == item.value['category'])
+            .value;
+        loadedItems.add(
+          GroceryItem(
+            id: item.key,
+            name: item.value['name'],
+            quantity: item.value['quantity'],
+            category: category,
+          ),
+        );
+      }
+      // return loadedItems;
+      setState(() {
+        _groceryItems = loadedItems;
+        _isLoading = false;
+      });
+    } catch (error) {
+      setState(() {
+        _error = 'Something went wrong! Please try again later.';
+      });
+    }
     // print(response.body);
     // print(response.statusCode);
 
     // print(response.body);
 
-    if (response.statusCode >= 400) {
-      setState(() {
-        _error = 'Failed to load data. Please try again later.';
-      });
-    }
-
-    // print(response.body);
-    if (response.body == 'null') {
-      setState(() {
-        _isLoading = false;
-      });
-      return;
-    }
-
-    // final Map<String, Map<String, dynamic>> listData =
-    final Map<String, dynamic> listData = json.decode(response.body);
-    final List<GroceryItem> loadedItems = [];
-    for (final item in listData.entries) {
-      final category = categories.entries
-          .firstWhere(
-              (catItem) => catItem.value.title == item.value['category'])
-          .value;
-      loadedItems.add(
-        GroceryItem(
-          id: item.key,
-          name: item.value['name'],
-          quantity: item.value['quantity'],
-          category: category,
-        ),
-      );
-    }
-    setState(() {
-      _groceryItems = loadedItems;
-      _isLoading = false;
-    });
+    // throw Exception('An error occurred!');
   }
 
   void _addItem() async {
@@ -159,7 +175,7 @@ class _GroceryListState extends State<GroceryList> {
         child: Text(
           _error!,
           style: const TextStyle(
-            fontSize: 18.0,
+            fontSize: 17.0,
           ),
         ),
       );
@@ -176,6 +192,62 @@ class _GroceryListState extends State<GroceryList> {
         ],
       ),
       body: content,
+      // body: FutureBuilder(
+      //   future: _loadedItems,
+      //   // _loadItems(),
+      //   builder: (context, snapshot) {
+      //     if (snapshot.connectionState == ConnectionState.waiting) {
+      //       return const Center(
+      //         child: CircularProgressIndicator(),
+      //       );
+      //     }
+
+      //     if (snapshot.hasError) {
+      //       return Center(
+      //         child: Text(
+      //           snapshot.error.toString(),
+      //           style: const TextStyle(
+      //             fontSize: 18.0,
+      //           ),
+      //         ),
+      //       );
+      //     }
+
+      //     if (snapshot.data!.isEmpty) {
+      //       return const Center(
+      //         child: Text(
+      //           'You got no items yet!',
+      //           style: TextStyle(
+      //             fontSize: 25.0,
+      //           ),
+      //         ),
+      //       );
+      //     }
+      //     return RefreshIndicator(
+      //       onRefresh: refresh,
+      //       child: ListView.builder(
+      //         itemCount: snapshot.data!.length,
+      //         itemBuilder: (ctx, index) => Dismissible(
+      //           key: ValueKey(snapshot.data![index].id),
+      //           onDismissed: (direction) {
+      //             _removeItem(snapshot.data![index]);
+      //           },
+      //           child: ListTile(
+      //             title: Text(snapshot.data![index].name),
+      //             leading: Container(
+      //               width: 24.0,
+      //               height: 24.0,
+      //               color: snapshot.data![index].category.color,
+      //             ),
+      //             trailing: Text(
+      //               snapshot.data![index].quantity.toString(),
+      //             ),
+      //           ),
+      //         ),
+      //       ),
+      //     );
+      //   },
+      // ),
     );
   }
 }
