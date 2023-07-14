@@ -32,10 +32,20 @@ class _GroceryListState extends State<GroceryList> {
     // print(response.body);
     // print(response.statusCode);
 
+    // print(response.body);
+
     if (response.statusCode >= 400) {
       setState(() {
         _error = 'Failed to load data. Please try again later.';
       });
+    }
+
+    // print(response.body);
+    if (response.body == 'null') {
+      setState(() {
+        _isLoading = false;
+      });
+      return;
     }
 
     // final Map<String, Map<String, dynamic>> listData =
@@ -78,25 +88,26 @@ class _GroceryListState extends State<GroceryList> {
     });
   }
 
-  void _removeItem(GroceryItem item) {
-    final groceryItemIndex = _groceryItems.indexOf(item);
+  void _removeItem(GroceryItem item) async {
+    final index = _groceryItems.indexOf(item);
     setState(() {
       _groceryItems.remove(item);
     });
-    ScaffoldMessenger.of(context).clearSnackBars();
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        duration: const Duration(seconds: 3),
-        content: const Text('Grocery Item deleted!'),
-        action: SnackBarAction(
-            label: "Undo",
-            onPressed: () {
-              setState(() {
-                _groceryItems.insert(groceryItemIndex, item);
-              });
-            }),
-      ),
-    );
+
+    final url = Uri.https(projectID, 'shopping-list/${item.id}.json');
+
+    final response = await http.delete(url);
+
+    if (response.statusCode >= 400) {
+      // Optional : Show error message.
+      setState(() {
+        _groceryItems.insert(index, item);
+      });
+    }
+  }
+
+  Future<void> refresh() async {
+    _loadItems();
   }
 
   @override
@@ -117,22 +128,25 @@ class _GroceryListState extends State<GroceryList> {
     }
 
     if (_groceryItems.isNotEmpty) {
-      content = ListView.builder(
-        itemCount: _groceryItems.length,
-        itemBuilder: (ctx, index) => Dismissible(
-          key: ValueKey(_groceryItems[index].id),
-          onDismissed: (direction) {
-            _removeItem(_groceryItems[index]);
-          },
-          child: ListTile(
-            title: Text(_groceryItems[index].name),
-            leading: Container(
-              width: 24.0,
-              height: 24.0,
-              color: _groceryItems[index].category.color,
-            ),
-            trailing: Text(
-              _groceryItems[index].quantity.toString(),
+      content = RefreshIndicator(
+        onRefresh: refresh,
+        child: ListView.builder(
+          itemCount: _groceryItems.length,
+          itemBuilder: (ctx, index) => Dismissible(
+            key: ValueKey(_groceryItems[index].id),
+            onDismissed: (direction) {
+              _removeItem(_groceryItems[index]);
+            },
+            child: ListTile(
+              title: Text(_groceryItems[index].name),
+              leading: Container(
+                width: 24.0,
+                height: 24.0,
+                color: _groceryItems[index].category.color,
+              ),
+              trailing: Text(
+                _groceryItems[index].quantity.toString(),
+              ),
             ),
           ),
         ),
@@ -141,11 +155,11 @@ class _GroceryListState extends State<GroceryList> {
 
     if (_error != null) {
       // ignore: unused_local_variable
-      Widget content = Center(
+      content = Center(
         child: Text(
           _error!,
           style: const TextStyle(
-            fontSize: 25.0,
+            fontSize: 18.0,
           ),
         ),
       );
