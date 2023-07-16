@@ -154,7 +154,12 @@ class _GroceryListState extends State<GroceryList> {
               _removeItem(_groceryItems[index]);
             },
             child: ListTile(
-              title: Text(_groceryItems[index].name),
+              title: Text(
+                _groceryItems[index].name,
+                style: const TextStyle(
+                  fontSize: 20.0,
+                ),
+              ),
               leading: Container(
                 width: 24.0,
                 height: 24.0,
@@ -162,6 +167,9 @@ class _GroceryListState extends State<GroceryList> {
               ),
               trailing: Text(
                 _groceryItems[index].quantity.toString(),
+                style: const TextStyle(
+                  fontSize: 20.0,
+                ),
               ),
             ),
           ),
